@@ -1,24 +1,21 @@
 package jlanesmith.tetris;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.media.AudioManager;
-import android.media.SoundPool;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import java.io.IOException;
-
 /**
  * Created by Jonathan Lane-Smith on 5/8/2017.
  */
 public class TetrisView extends SurfaceView implements Runnable {
+
+    private static int gameHeight = 20;
+    private static int gameLength = 10;
 
     Context context;
 
@@ -49,27 +46,12 @@ public class TetrisView extends SurfaceView implements Runnable {
     private int screenX;
     private int screenY;
 
-    // For sound FX
-    private SoundPool soundPool;
-    private int playerExplodeID = -1;
-    private int invaderExplodeID = -1;
-    private int shootID = -1;
-    private int damageShelterID = -1;
-    private int uhID = -1;
-    private int ohID = -1;
-
     // The score
     int score = 0;
 
     // Lives
     private int lives = 3;
 
-    // How menacing should the sound be?
-    private long menaceInterval = 1000;
-    // Which menace sound should play next
-    private boolean uhOrOh;
-    // When did we last play a menacing sound
-    private long lastMenaceTime = System.currentTimeMillis();
 
     // When the we initialize (call new()) on gameView
 // This special constructor method runs
@@ -95,6 +77,7 @@ public class TetrisView extends SurfaceView implements Runnable {
 
     private void prepareLevel() {
 
+
     }
 
     @Override
@@ -107,7 +90,7 @@ public class TetrisView extends SurfaceView implements Runnable {
             // Capture the current time in milliseconds in startFrameTime
             long startFrameTime = System.currentTimeMillis();
 
-            if (System.currentTimeMillis() - timeSinceMove > 500) {
+            if (System.currentTimeMillis() - timeSinceMove >= 500) {
                 timeSinceMove = System.currentTimeMillis();
                 // Update the frame
                 if (!paused) {
@@ -136,7 +119,6 @@ public class TetrisView extends SurfaceView implements Runnable {
         if (lost) {
             prepareLevel();
         }
-
 
     }
 
