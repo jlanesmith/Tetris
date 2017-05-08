@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TETRIS</string>
+    <string name="play_game">Play Game</string>
+    <string name="Edition">Lane-Smith Edition</string>
+</resources>
