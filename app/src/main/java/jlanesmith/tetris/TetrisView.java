@@ -10,6 +10,9 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import static jlanesmith.tetris.Constants.gameBottom;
+import static jlanesmith.tetris.Constants.padding;
+
 /**
  * Created by Jonathan Lane-Smith on 5/8/2017.
  */
@@ -31,7 +34,7 @@ public class TetrisView extends SurfaceView implements Runnable {
     private volatile boolean playing;
 
     // Game is paused at the start
-    private boolean paused = true;
+    private boolean paused = false;
 
     // A Canvas and a Paint object
     private Canvas canvas;
@@ -44,7 +47,7 @@ public class TetrisView extends SurfaceView implements Runnable {
     private long timeThisFrame;
 
     // The size of the screen in pixels
-    private int screenX;
+    public int screenX;
     private int screenY;
     private int brickSize;
 
@@ -55,6 +58,8 @@ public class TetrisView extends SurfaceView implements Runnable {
     private int lives = 3;
 
     private Brick[] bricks;
+
+    private Rect bottomLine;
 
     // When the we initialize (call new()) on gameView
     public TetrisView(Context context, int x, int y) {
@@ -84,10 +89,18 @@ public class TetrisView extends SurfaceView implements Runnable {
         }
         brickSize = screenX/gameLength;
 
-        bricks[0] = new Brick( new Rect(brickSize*4+5, brickSize*0+5, brickSize*5-5, brickSize*1-5));
-        bricks[1] = new Brick( new Rect(brickSize*5+5, brickSize*0+5, brickSize*6-5, brickSize*1-5));
-        bricks[2] = new Brick( new Rect(brickSize*6+5, brickSize*0+5, brickSize*7-5, brickSize*1-5));
-        bricks[3] = new Brick( new Rect(brickSize*7+5, brickSize*0+5, brickSize*8-5, brickSize*1-5));
+        int bottomLineY = screenY - Constants.gameBottom -
+                (screenY - Constants.gameBottom)%brickSize;
+        bottomLine = new Rect(0, bottomLineY + padding, screenX, bottomLineY + padding*3);
+
+        bricks[0] = new Brick( new Rect(brickSize*4+Constants.padding, brickSize*-2+
+                Constants.padding, brickSize*5-Constants.padding, brickSize*-1-Constants.padding));
+        bricks[1] = new Brick( new Rect(brickSize*5+Constants.padding, brickSize*-2+
+                Constants.padding, brickSize*6-Constants.padding, brickSize*-1-Constants.padding));
+        bricks[2] = new Brick( new Rect(brickSize*6+Constants.padding, brickSize*-2+
+                Constants.padding, brickSize*7-Constants.padding, brickSize*-1-Constants.padding));
+        bricks[3] = new Brick( new Rect(brickSize*7+Constants.padding, brickSize*-2+
+                Constants.padding, brickSize*8-Constants.padding, brickSize*-1-Constants.padding));
     }
 
     @Override
@@ -130,11 +143,21 @@ public class TetrisView extends SurfaceView implements Runnable {
             prepareLevel();
         }
 
-        for (int i = 0; i < bricks.length; i++) {
-            bricks[i].getRect().top += brickSize;
-            bricks[i].getRect().bottom += brickSize;
+        boolean isStopped = false;
+
+        checkStopped: for (int i = 0; i < bricks.length; i++) {
+            if (bricks[1].rect.bottom >= (bottomLine.top - Constants.padding*2)) {
+                isStopped = true;
+                break checkStopped;
+            }
         }
 
+        if (!isStopped) {
+            for (int i = 0; i < bricks.length; i++) {
+                bricks[i].rect.top += brickSize;
+                bricks[i].rect.bottom += brickSize;
+            }
+        }
     }
 
     private void draw() {
@@ -147,11 +170,13 @@ public class TetrisView extends SurfaceView implements Runnable {
             canvas.drawColor(Color.argb(255, 26, 128, 182));
 
             // Choose the brush color for drawing
-            paint.setColor(bricks[0].getColor());
+            paint.setColor(bricks[0].color);
 
             for (int i = 0; i < bricks.length; i++) {
-                canvas.drawRect(bricks[i].getRect(), paint);
+                canvas.drawRect(bricks[i].rect, paint);
             }
+
+            canvas.drawRect(bottomLine , paint);
 
             // Draw the score and remaining lives
             // Change the brush color
@@ -188,8 +213,6 @@ public class TetrisView extends SurfaceView implements Runnable {
 
             // Player has touched the screen
             case MotionEvent.ACTION_DOWN:
-
-                paused = false;
 
                 break;
 
