@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -45,6 +46,7 @@ public class TetrisView extends SurfaceView implements Runnable {
     // The size of the screen in pixels
     private int screenX;
     private int screenY;
+    private int brickSize;
 
     // The score
     int score = 0;
@@ -52,14 +54,11 @@ public class TetrisView extends SurfaceView implements Runnable {
     // Lives
     private int lives = 3;
 
+    private Brick[] bricks;
 
     // When the we initialize (call new()) on gameView
-// This special constructor method runs
     public TetrisView(Context context, int x, int y) {
 
-        // The next line of code asks the
-        // SurfaceView class to set up our object.
-        // How kind.
         super(context);
 
         // Make a globally available copy of the context so we can use it in another method
@@ -71,13 +70,24 @@ public class TetrisView extends SurfaceView implements Runnable {
 
         screenX = x;
         screenY = y;
+        bricks = new Brick[4];
 
         prepareLevel();
     }
 
     private void prepareLevel() {
 
+        while (screenX == 0) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {}
+        }
+        brickSize = screenX/gameLength;
 
+        bricks[0] = new Brick( new Rect(brickSize*4+5, brickSize*0+5, brickSize*5-5, brickSize*1-5));
+        bricks[1] = new Brick( new Rect(brickSize*5+5, brickSize*0+5, brickSize*6-5, brickSize*1-5));
+        bricks[2] = new Brick( new Rect(brickSize*6+5, brickSize*0+5, brickSize*7-5, brickSize*1-5));
+        bricks[3] = new Brick( new Rect(brickSize*7+5, brickSize*0+5, brickSize*8-5, brickSize*1-5));
     }
 
     @Override
@@ -120,6 +130,11 @@ public class TetrisView extends SurfaceView implements Runnable {
             prepareLevel();
         }
 
+        for (int i = 0; i < bricks.length; i++) {
+            bricks[i].getRect().top += brickSize;
+            bricks[i].getRect().bottom += brickSize;
+        }
+
     }
 
     private void draw() {
@@ -132,7 +147,11 @@ public class TetrisView extends SurfaceView implements Runnable {
             canvas.drawColor(Color.argb(255, 26, 128, 182));
 
             // Choose the brush color for drawing
-            paint.setColor(Color.argb(255, 255, 255, 255));
+            paint.setColor(bricks[0].getColor());
+
+            for (int i = 0; i < bricks.length; i++) {
+                canvas.drawRect(bricks[i].getRect(), paint);
+            }
 
             // Draw the score and remaining lives
             // Change the brush color
