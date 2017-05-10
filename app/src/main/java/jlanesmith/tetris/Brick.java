@@ -8,11 +8,16 @@ import android.graphics.Rect;
  */
 public class Brick {
 
-    public int color = Color.argb(255, 255, 255, 255);
+    public int color;
     public Rect rect;
 
-    Brick(Rect rect) {
+    Brick() {
+
+    }
+
+    Brick(Rect rect, int color) {
         this.rect = rect;
+        this.color = color;
     }
 
 

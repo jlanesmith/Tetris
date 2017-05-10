@@ -1,5 +1,7 @@
 package jlanesmith.tetris;
 
+import android.graphics.Color;
+
 /**
  * Created by Jonathan Lane-Smith on 5/9/2017.
  */
@@ -17,5 +19,7 @@ public class Constants {
     /** Number of bricks across */
     public final static int gameLength = 10;
 
+    public final static int[] colors = {Color.RED, Color.BLACK, Color.GRAY, Color.BLUE, Color.CYAN,
+            Color.MAGENTA, Color.YELLOW, Color.GREEN, Color.WHITE};
 
 }

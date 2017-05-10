@@ -10,8 +10,12 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
+import static jlanesmith.tetris.Constants.colors;
 import static jlanesmith.tetris.Constants.gameBottom;
 import static jlanesmith.tetris.Constants.gameSpeed;
 import static jlanesmith.tetris.Constants.padding;
@@ -47,7 +51,8 @@ public class TetrisView extends SurfaceView implements Runnable {
     private int screenY;
     private int brickSize;
     private int[][] shapeType;
-    private Brick[] bricks;
+    List<Brick> bricks = new ArrayList<Brick>();
+
     private Rect bottomLine;
     private int shapeChangeX = 0;
     private int shapeChangeY = 0;
@@ -62,14 +67,15 @@ public class TetrisView extends SurfaceView implements Runnable {
         paint = new Paint();
         screenX = x;
         screenY = y;
-        bricks = new Brick[4];
 
         prepareLevel();
     }
 
-    private Brick[] createBricks() {
+    private List<Brick> createBricks() {
 
-        int numShapesSoFar = 0;
+        Random generator = new Random();
+        int color = generator.nextInt(colors.length);
+        int numBricksSoFar = 0;
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 if (shapeType[i][j] == 1) {
@@ -77,9 +83,8 @@ public class TetrisView extends SurfaceView implements Runnable {
                     int top = brickSize * (-4 + i + shapeChangeY) + Constants.padding;
                     int right = brickSize * (4 + j + shapeChangeX) - Constants.padding;
                     int bottom = brickSize * (-3 + i + shapeChangeY) - Constants.padding;
-                    bricks[numShapesSoFar] = new Brick(new Rect(left, top, right,
-                            bottom));
-                    numShapesSoFar++;
+                    bricks.add(numBricksSoFar, new Brick(new Rect(left, top, right, bottom), colors[color]));
+                    numBricksSoFar++;
                 }
             }
         }
@@ -141,19 +146,25 @@ public class TetrisView extends SurfaceView implements Runnable {
         boolean isStopped = false;
 
         checkStopped:
-        for (int i = 0; i < bricks.length; i++) {
-            if (bricks[i].rect.bottom >= (bottomLine.top - Constants.padding * 2)) {
+        for (int i = 0; i < 4; i++) {
+            if (bricks.get(i).rect.bottom >= (bottomLine.top - Constants.padding * 2)) {
                 isStopped = true;
                 break checkStopped;
             }
         }
 
         if (!isStopped) {
-            for (int i = 0; i < bricks.length; i++) {
-                bricks[i].rect.top += brickSize;
-                bricks[i].rect.bottom += brickSize;
+            for (int i = 0; i < 4; i++) {
+                Brick newBrick = bricks.get(i);
+                newBrick.rect.top += brickSize;
+                newBrick.rect.bottom += brickSize;
+                bricks.set(i, newBrick);
             }
             shapeChangeY++;
+        } else {
+            shapeChangeX = 0;
+            shapeChangeY = 0;
+            bricks = createBricks();
         }
     }
 
@@ -166,17 +177,14 @@ public class TetrisView extends SurfaceView implements Runnable {
             // Draw the background color
             canvas.drawColor(Color.argb(255, 26, 128, 182));
 
-            // Choose the brush color for drawing
-            paint.setColor(bricks[0].color);
-
-            for (int i = 0; i < bricks.length; i++) {
-                canvas.drawRect(bricks[i].rect, paint);
-            }
-
+            paint.setColor(Color.argb(255, 255, 255, 255));
             canvas.drawRect(bottomLine, paint);
 
-            // Draw the score and remaining lives
-            // Change the brush color
+            for (int i = 0; i < bricks.size(); i++) {
+                paint.setColor(bricks.get(i).color);
+                canvas.drawRect(bricks.get(i).rect, paint);
+            }
+
             paint.setColor(Color.argb(255, 249, 129, 0));
             paint.setTextSize(40);
             canvas.drawText("Score: " + score + "   Lives: " + lives, 10, 50, paint);
@@ -216,8 +224,10 @@ public class TetrisView extends SurfaceView implements Runnable {
                     int movementChange = motionEvent.getX() < screenX / 2 ? -brickSize : brickSize;
 
                     for (int i = 0; i < 4; i++) {
-                        bricks[i].rect.left += movementChange;
-                        bricks[i].rect.right += movementChange;
+                        Brick newBrick = bricks.get(i);
+                        newBrick.rect.left += movementChange;
+                        newBrick.rect.right += movementChange;
+                        bricks.set(i, newBrick);
                     }
                     shapeChangeX += movementChange / brickSize;
 
@@ -232,8 +242,8 @@ public class TetrisView extends SurfaceView implements Runnable {
                                 int top = brickSize * (-4 + i + shapeChangeY) + Constants.padding;
                                 int right = brickSize * (4 + j + shapeChangeX) - Constants.padding;
                                 int bottom = brickSize * (-3 + i + shapeChangeY) - Constants.padding;
-                                bricks[numShapesSoFar] = new Brick(new Rect(left, top, right,
-                                        bottom));
+                                bricks.set(numShapesSoFar, new Brick(new Rect(left, top, right,
+                                        bottom), bricks.get(numShapesSoFar).color));
                                 numShapesSoFar++;
                             }
                         }
