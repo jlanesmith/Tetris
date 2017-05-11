@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import static android.media.CamcorderProfile.get;
 import static jlanesmith.tetris.Constants.colors;
 import static jlanesmith.tetris.Constants.gameLength;
 import static jlanesmith.tetris.Constants.padding;
@@ -162,11 +163,12 @@ public class TetrisView extends SurfaceView implements Runnable {
         for (int i = 0; i < 4; i++) {
             try {
                 if ((bricks.get(i).yCoord == gameHeight - 1) ||
-                        (filledSquares[bricks.get(i).yCoord + 1][bricks.get(i).xCoord] == 1) ) {
+                        (filledSquares[bricks.get(i).yCoord + 1][bricks.get(i).xCoord] == 1)) {
                     isStopped = true;
                     break checkStopped;
                 }
-            } catch (ArrayIndexOutOfBoundsException e) {}
+            } catch (ArrayIndexOutOfBoundsException e) {
+            }
         }
 
         if (!isStopped) {
@@ -180,7 +182,31 @@ public class TetrisView extends SurfaceView implements Runnable {
             for (int i = 0; i < 4; i++) {
                 filledSquares[bricks.get(i).yCoord][bricks.get(i).xCoord] = 1;
             }
-            printInfo();
+            for (int i = 0; i < gameHeight; i++) {
+                boolean isOne = true;
+                for (int j = 0; j < gameLength; j++) {
+                    isOne &= filledSquares[i][j] == 1;
+                }
+                if (isOne) {
+                    int totalBricks = bricks.size();
+                    for (int j = 0; j < totalBricks; j++) {
+                        if (bricks.get(j).yCoord == i) {
+                            bricks.remove(j);
+                            totalBricks--;
+                            j--;
+                        } else if (bricks.get(j).yCoord < i) {
+                            Brick newBrick = bricks.get(j);
+                            newBrick.yCoord++;
+                            bricks.set(j, newBrick);
+                        }
+                    }
+                    for (int j = i; j > 0; j--) {
+                        for (int k = 0; k < gameLength; k++) {
+                            filledSquares[j][k] = filledSquares[j - 1][k];
+                        }
+                    }
+                }
+            }
             shapeChangeX = 0;
             shapeChangeY = 0;
             bricks = createBricks();
