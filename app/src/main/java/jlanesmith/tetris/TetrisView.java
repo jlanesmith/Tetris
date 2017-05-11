@@ -10,14 +10,14 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.prefs.Preferences;
 
 import static jlanesmith.tetris.Constants.colors;
-import static jlanesmith.tetris.Constants.gameBottom;
-import static jlanesmith.tetris.Constants.gameSpeed;
+import static jlanesmith.tetris.Constants.gameLength;
 import static jlanesmith.tetris.Constants.padding;
 import static jlanesmith.tetris.Shapes.shapeTypes;
 
@@ -27,20 +27,13 @@ import static jlanesmith.tetris.Shapes.shapeTypes;
 public class TetrisView extends SurfaceView implements Runnable {
 
     Context context;
-    // This is our thread
     private Thread gameThread = null;
-    // Our SurfaceHolder to lock the surface before we draw our graphics
     private SurfaceHolder ourHolder;
-    // A boolean which we will set and unset when the game is running- or not.
     private volatile boolean playing;
-    // Game is paused at the start
     private boolean paused = false;
-    // A Canvas and a Paint object
     private Canvas canvas;
     private Paint paint;
-    // This variable tracks the game frame rate
     private long fps;
-    // This is used to help calculate the fps
     private long timeThisFrame;
 
     int score = 0;
@@ -49,8 +42,10 @@ public class TetrisView extends SurfaceView implements Runnable {
     // The size of the screen in pixels
     public int screenX;
     private int screenY;
+    private int gameHeight;
     private int brickSize;
     private int[][] shapeType;
+    private int[][] filledSquares;
     List<Brick> bricks = new ArrayList<Brick>();
 
     private Rect bottomLine;
@@ -67,34 +62,38 @@ public class TetrisView extends SurfaceView implements Runnable {
         paint = new Paint();
         screenX = x;
         screenY = y;
-
         prepareLevel();
+    }
+
+    private Brick makeBrick(int i, int j, int color) {
+
+        int left = brickSize * (3 + j + shapeChangeX) + Constants.padding;
+        int top = brickSize * (-4 + i + shapeChangeY) + Constants.padding;
+        int right = brickSize * (4 + j + shapeChangeX) - Constants.padding;
+        int bottom = brickSize * (-3 + i + shapeChangeY) - Constants.padding;
+        int xCoord = 3 + j + shapeChangeX;
+        int yCoord = -4 + i + shapeChangeY;
+        return new Brick(new Rect(left, top, right, bottom), color, xCoord, yCoord);
     }
 
     private List<Brick> createBricks() {
 
         Random generator = new Random();
         int color = generator.nextInt(colors.length);
+        shapeType = shapeTypes[generator.nextInt(shapeTypes.length)];
         int numBricksSoFar = 0;
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 if (shapeType[i][j] == 1) {
-                    int left = brickSize * (3 + j + shapeChangeX) + Constants.padding;
-                    int top = brickSize * (-4 + i + shapeChangeY) + Constants.padding;
-                    int right = brickSize * (4 + j + shapeChangeX) - Constants.padding;
-                    int bottom = brickSize * (-3 + i + shapeChangeY) - Constants.padding;
-                    bricks.add(numBricksSoFar, new Brick(new Rect(left, top, right, bottom), colors[color]));
+                    bricks.add(numBricksSoFar, makeBrick(i, j, colors[color]));
                     numBricksSoFar++;
                 }
             }
         }
-      return bricks;
+        return bricks;
     }
 
     private void prepareLevel() {
-
-        Random generator = new Random();
-        shapeType = shapeTypes[generator.nextInt(shapeTypes.length)];
 
         while (screenX == 0) {
             try {
@@ -103,9 +102,11 @@ public class TetrisView extends SurfaceView implements Runnable {
             }
         }
         brickSize = screenX / Constants.gameLength;
+        gameHeight = (screenY - Constants.gameBottom -
+                (screenY - Constants.gameBottom) % brickSize) / brickSize;
+        filledSquares = new int[gameHeight][gameLength];
 
-        int bottomLineY = screenY - Constants.gameBottom -
-                (screenY - Constants.gameBottom) % brickSize;
+        int bottomLineY = gameHeight * brickSize;
         bottomLine = new Rect(0, bottomLineY + padding, screenX, bottomLineY + padding * 3);
         bricks = createBricks();
         draw();
@@ -122,18 +123,14 @@ public class TetrisView extends SurfaceView implements Runnable {
             long startFrameTime = System.currentTimeMillis();
 
             if (System.currentTimeMillis() - timeSinceMove >= Constants.gameSpeed) {
+
                 timeSinceMove = System.currentTimeMillis();
-                // Update the frame
+
                 if (!paused) {
                     update();
                 }
-                // Draw the frame
                 draw();
             }
-
-            // Calculate the fps this frame
-            // We can then use the result to
-            // time animations and more.
             timeThisFrame = System.currentTimeMillis() - startFrameTime;
             if (timeThisFrame >= 1) {
                 fps = 1000 / timeThisFrame;
@@ -147,10 +144,13 @@ public class TetrisView extends SurfaceView implements Runnable {
 
         checkStopped:
         for (int i = 0; i < 4; i++) {
-            if (bricks.get(i).rect.bottom >= (bottomLine.top - Constants.padding * 2)) {
-                isStopped = true;
-                break checkStopped;
-            }
+            try {
+                if ((bricks.get(i).yCoord == gameHeight - 1) ||
+                        (filledSquares[bricks.get(i).yCoord + 1][bricks.get(i).xCoord] == 1) ) {
+                    isStopped = true;
+                    break checkStopped;
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {}
         }
 
         if (!isStopped) {
@@ -158,10 +158,14 @@ public class TetrisView extends SurfaceView implements Runnable {
                 Brick newBrick = bricks.get(i);
                 newBrick.rect.top += brickSize;
                 newBrick.rect.bottom += brickSize;
+                newBrick.yCoord++;
                 bricks.set(i, newBrick);
             }
             shapeChangeY++;
         } else {
+            for (int i = 0; i < 4; i++) {
+                filledSquares[bricks.get(i).yCoord][bricks.get(i).xCoord] = 1;
+            }
             shapeChangeX = 0;
             shapeChangeY = 0;
             bricks = createBricks();
@@ -227,6 +231,7 @@ public class TetrisView extends SurfaceView implements Runnable {
                         Brick newBrick = bricks.get(i);
                         newBrick.rect.left += movementChange;
                         newBrick.rect.right += movementChange;
+                        newBrick.xCoord++;
                         bricks.set(i, newBrick);
                     }
                     shapeChangeX += movementChange / brickSize;
@@ -235,15 +240,11 @@ public class TetrisView extends SurfaceView implements Runnable {
                     boolean clockwise = motionEvent.getX() > screenX / 2;
                     shapeType = Shapes.rotateShape(clockwise, shapeType);
                     int numShapesSoFar = 0;
+                    Brick oldBrick = bricks.get(0);
                     for (int i = 0; i < 4; i++) {
                         for (int j = 0; j < 4; j++) {
                             if (shapeType[i][j] == 1) {
-                                int left = brickSize * (3 + j + shapeChangeX) + Constants.padding;
-                                int top = brickSize * (-4 + i + shapeChangeY) + Constants.padding;
-                                int right = brickSize * (4 + j + shapeChangeX) - Constants.padding;
-                                int bottom = brickSize * (-3 + i + shapeChangeY) - Constants.padding;
-                                bricks.set(numShapesSoFar, new Brick(new Rect(left, top, right,
-                                        bottom), bricks.get(numShapesSoFar).color));
+                                bricks.set(numShapesSoFar, makeBrick(i, j, oldBrick.color));
                                 numShapesSoFar++;
                             }
                         }
@@ -257,7 +258,6 @@ public class TetrisView extends SurfaceView implements Runnable {
             case MotionEvent.ACTION_UP:
                 break;
         }
-
         return true;
     }
 }

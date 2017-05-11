@@ -19,7 +19,7 @@ public class Constants {
     /** Number of bricks across */
     public final static int gameLength = 10;
 
-    public final static int[] colors = {Color.RED, Color.BLACK, Color.GRAY, Color.BLUE, Color.CYAN,
-            Color.MAGENTA, Color.YELLOW, Color.GREEN, Color.WHITE};
+    public final static int[] colors = {Color.RED, Color.BLUE, Color.CYAN, Color.MAGENTA,
+            Color.YELLOW, Color.GREEN, Color.WHITE};
 
 }

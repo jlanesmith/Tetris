@@ -10,15 +10,17 @@ public class Brick {
 
     public int color;
     public Rect rect;
+    public int xCoord;
+    public int yCoord;
 
-    Brick() {
-
-    }
-
-    Brick(Rect rect, int color) {
+    Brick(Rect rect, int color, int xCoord, int yCoord) {
         this.rect = rect;
         this.color = color;
+        this.xCoord = xCoord;
+        this.yCoord = yCoord;
     }
+
+
 
 
 
