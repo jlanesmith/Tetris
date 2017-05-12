@@ -268,25 +268,52 @@ public class TetrisView extends SurfaceView implements Runnable {
 
                     int movementChange = motionEvent.getX() < screenX / 2 ? -brickSize : brickSize;
 
+                    boolean isOkayToMove = true;
                     for (int i = 0; i < 4; i++) {
-                        Brick newBrick = bricks.get(i);
-                        newBrick.xCoord += movementChange / brickSize;
-                        bricks.set(i, newBrick);
+                        int testXCoord = bricks.get(i).xCoord + movementChange/brickSize;
+                        isOkayToMove &= testXCoord >= 0 && testXCoord < gameLength;
+                        try {
+                            isOkayToMove &= filledSquares[bricks.get(i).yCoord][testXCoord] == 0;
+                        } catch (ArrayIndexOutOfBoundsException e) {}
                     }
-                    shapeChangeX += movementChange / brickSize;
+                    if (isOkayToMove) {
+                        for (int i = 0; i < 4; i++) {
+                            Brick newBrick = bricks.get(i);
+                            newBrick.xCoord += movementChange / brickSize;
+                            bricks.set(i, newBrick);
+                        }
+                        shapeChangeX += movementChange / brickSize;
+                    }
 
                 } else {
                     boolean clockwise = motionEvent.getX() > screenX / 2;
                     shapeType = Shapes.rotateShape(clockwise, shapeType);
                     int numShapesSoFar = 0;
                     Brick oldBrick = bricks.get(0);
+                    Brick[] testBricks = new Brick[4];
                     for (int i = 0; i < 4; i++) {
                         for (int j = 0; j < 4; j++) {
                             if (shapeType[i][j] == 1) {
-                                bricks.set(numShapesSoFar, makeBrick(i, j, oldBrick.color));
+                                testBricks[numShapesSoFar] = makeBrick(i, j, oldBrick.color);
                                 numShapesSoFar++;
                             }
                         }
+                    }
+                    boolean isOkayToRotate = true;
+                    for (int i = 0; i < 4; i++) {
+                        try {
+                            isOkayToRotate &= filledSquares[testBricks[i].yCoord]
+                                    [testBricks[i].xCoord] == 0;
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            isOkayToRotate = false;
+                        }
+                    }
+                    if (isOkayToRotate) {
+                        for (int i = 0; i < 4; i++) {
+                            bricks.set(i, testBricks[i]);
+                        }
+                    } else {
+                        shapeType = Shapes.rotateShape(!clockwise, shapeType);
                     }
                 }
                 draw();
