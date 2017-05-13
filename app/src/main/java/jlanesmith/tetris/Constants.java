@@ -8,13 +8,16 @@ import android.graphics.Color;
 public class Constants {
 
     /** Distance from bottom of screen to bottom of game */
-    public final static int gameBottom = 200;
+    public final static int gameBottom = 400;
 
     /** Padding between each brick (Doubled because both bricks have padding). */
     public final static int padding = 4;
 
     /** Speed of the game, in milliseconds. */
-    public final static int gameSpeed = 500;
+    public final static int initialGameSpeed = 500;
+
+    /** Speed of the game, in milliseconds. */
+    public final static int fastGameSpeed = 50;
 
     /** Number of bricks across */
     public final static int gameLength = 10;

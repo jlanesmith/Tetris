@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -32,11 +33,6 @@ public class TetrisView extends SurfaceView implements Runnable {
     private boolean paused = false;
     private Canvas canvas;
     private Paint paint;
-    private long fps;
-    private long timeThisFrame;
-
-    int score = 0;
-    private int lives = 3;
 
     // The size of the screen in pixels
     public int screenX;
@@ -45,11 +41,15 @@ public class TetrisView extends SurfaceView implements Runnable {
     private int brickSize;
     private int[][] shapeType;
     private int[][] filledSquares;
-    List<Brick> bricks = new ArrayList<Brick>();
-
-    private Rect bottomLine;
+    private Rect bottomLine, sideLine;
+    private Rect[] dividingLines;
     private int shapeChangeX = 0;
     private int shapeChangeY = 0;
+    private int score = 0;
+    private List<Brick> bricks = new ArrayList<Brick>();
+
+    private int normalGameSpeed = Constants.initialGameSpeed;
+    private int currentGameSpeed = normalGameSpeed;
 
     // When the we initialize (call new()) on gameView
     public TetrisView(Context context, int x, int y) {
@@ -59,18 +59,9 @@ public class TetrisView extends SurfaceView implements Runnable {
         this.context = context;
         ourHolder = getHolder();
         paint = new Paint();
-        screenX = x;
+        screenX = x*3/4;
         screenY = y;
         prepareLevel();
-    }
-
-    private void printInfo() {
-        for (int i = 0; i < gameHeight; i++) {
-            for (int j = 0; j < gameLength; j++) {
-                System.out.print(filledSquares[i][j]);
-            }
-            System.out.println();
-        }
     }
 
     private Rect updateBrick(Brick brick) {
@@ -124,7 +115,16 @@ public class TetrisView extends SurfaceView implements Runnable {
         filledSquares = new int[gameHeight][gameLength];
 
         int bottomLineY = gameHeight * brickSize;
-        bottomLine = new Rect(0, bottomLineY + padding, screenX, bottomLineY + padding * 3);
+        bottomLine = new Rect(0, bottomLineY + padding, screenX + padding,
+                bottomLineY + padding * 3);
+        sideLine = new Rect(screenX + padding, 0, screenX + padding * 3, bottomLineY + padding * 3);
+
+        dividingLines = new Rect[4];
+        dividingLines[0] = new Rect(0, screenY/2 + 1, screenX, screenY/2 - 1);
+        dividingLines[1] = new Rect(screenX/2-1, 0, screenX/2+1, screenY/2);
+        dividingLines[2] = new Rect(screenX*3/10-1, screenY/2, screenX*3/10+1, screenY);
+        dividingLines[3] = new Rect(screenX*7/10-1, screenY/2, screenX*7/10+1, screenY);
+
         bricks = createBricks();
         draw();
     }
@@ -139,7 +139,7 @@ public class TetrisView extends SurfaceView implements Runnable {
             // Capture the current time in milliseconds in startFrameTime
             long startFrameTime = System.currentTimeMillis();
 
-            if (System.currentTimeMillis() - timeSinceMove >= Constants.gameSpeed) {
+            if (System.currentTimeMillis() - timeSinceMove >= currentGameSpeed) {
 
                 timeSinceMove = System.currentTimeMillis();
 
@@ -148,10 +148,6 @@ public class TetrisView extends SurfaceView implements Runnable {
                 }
                 draw();
             }
-            timeThisFrame = System.currentTimeMillis() - startFrameTime;
-            if (timeThisFrame >= 1) {
-                fps = 1000 / timeThisFrame;
-            }
         }
     }
 
@@ -159,13 +155,12 @@ public class TetrisView extends SurfaceView implements Runnable {
 
         boolean isStopped = false;
 
-        checkStopped:
         for (int i = 0; i < 4; i++) {
             try {
                 if ((bricks.get(i).yCoord == gameHeight - 1) ||
                         (filledSquares[bricks.get(i).yCoord + 1][bricks.get(i).xCoord] == 1)) {
                     isStopped = true;
-                    break checkStopped;
+                    break;
                 }
             } catch (ArrayIndexOutOfBoundsException e) {
             }
@@ -224,15 +219,17 @@ public class TetrisView extends SurfaceView implements Runnable {
 
             paint.setColor(Color.argb(255, 255, 255, 255));
             canvas.drawRect(bottomLine, paint);
+            canvas.drawRect(sideLine, paint);
 
             for (int i = 0; i < bricks.size(); i++) {
                 paint.setColor(bricks.get(i).color);
                 canvas.drawRect(updateBrick(bricks.get(i)), paint);
             }
 
-            paint.setColor(Color.argb(255, 249, 129, 0));
-            paint.setTextSize(40);
-            canvas.drawText("Score: " + score + "   Lives: " + lives, 10, 50, paint);
+            paint.setColor(Color.argb(255, 0, 0, 0));
+            paint.setTextSize(200);
+            paint.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText("← ↶ ↓ ↷ →" , screenX/2, screenY-100, paint);
 
             // Draw everything to the screen
             ourHolder.unlockCanvasAndPost(canvas);
@@ -266,26 +263,36 @@ public class TetrisView extends SurfaceView implements Runnable {
 
                 if (motionEvent.getY() > screenY / 2) {
 
-                    int movementChange = motionEvent.getX() < screenX / 2 ? -brickSize : brickSize;
+                    if (motionEvent.getX() > screenX *3 / 10
+                            && motionEvent.getX() < screenX * 7 / 10) {
 
-                    boolean isOkayToMove = true;
-                    for (int i = 0; i < 4; i++) {
-                        int testXCoord = bricks.get(i).xCoord + movementChange/brickSize;
-                        isOkayToMove &= testXCoord >= 0 && testXCoord < gameLength;
-                        try {
-                            isOkayToMove &= filledSquares[bricks.get(i).yCoord][testXCoord] == 0;
-                        } catch (ArrayIndexOutOfBoundsException e) {}
-                    }
-                    if (isOkayToMove) {
+                        currentGameSpeed = Constants.fastGameSpeed;
+
+                    } else {
+
+                        int movementChange = motionEvent.getX() < screenX / 2 ? -brickSize : brickSize;
+
+                        boolean isOkayToMove = true;
                         for (int i = 0; i < 4; i++) {
-                            Brick newBrick = bricks.get(i);
-                            newBrick.xCoord += movementChange / brickSize;
-                            bricks.set(i, newBrick);
+                            int testXCoord = bricks.get(i).xCoord + movementChange / brickSize;
+                            isOkayToMove &= testXCoord >= 0 && testXCoord < gameLength;
+                            try {
+                                isOkayToMove &= filledSquares[bricks.get(i).yCoord][testXCoord] == 0;
+                            } catch (ArrayIndexOutOfBoundsException e) {
+                            }
                         }
-                        shapeChangeX += movementChange / brickSize;
+                        if (isOkayToMove) {
+                            for (int i = 0; i < 4; i++) {
+                                Brick newBrick = bricks.get(i);
+                                newBrick.xCoord += movementChange / brickSize;
+                                bricks.set(i, newBrick);
+                            }
+                            shapeChangeX += movementChange / brickSize;
+                        }
                     }
 
                 } else {
+
                     boolean clockwise = motionEvent.getX() > screenX / 2;
                     shapeType = Shapes.rotateShape(clockwise, shapeType);
                     int numShapesSoFar = 0;
@@ -322,9 +329,11 @@ public class TetrisView extends SurfaceView implements Runnable {
 
             // Player has removed finger from screen
             case MotionEvent.ACTION_UP:
+
+                currentGameSpeed = normalGameSpeed;
+
                 break;
         }
         return true;
     }
 }
-
