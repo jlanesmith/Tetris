@@ -7,8 +7,11 @@ import android.graphics.Color;
  */
 public class Constants {
 
-    /** Distance from bottom of screen to bottom of game */
-    public final static int gameBottom = 400;
+    /** Distance from bottom of screen to bottom of game (1/#) */
+    public final static int gameBottom = 6;
+
+    /** Distance from the sides of the screen to the game (1/#) */
+    public final static int gameSide = 5;
 
     /** Padding between each brick (Doubled because both bricks have padding). */
     public final static int padding = 4;
