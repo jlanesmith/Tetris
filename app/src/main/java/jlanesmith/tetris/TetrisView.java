@@ -32,15 +32,16 @@ public class TetrisView extends SurfaceView implements Runnable {
     private Paint paint;
 
     // The size of the screen in pixels
-    public int screenX;
+    private int screenX;
     private int screenY;
+    private int totalX;
+    private int totalY;
     private int sideDistance;
     private int gameHeight;
     private int brickSize;
     private int[][] shapeType;
     private int[][] filledSquares;
     private Rect bottomLine, leftSideLine, rightSideLine;
-    private Rect[] dividingLines;
     private int shapeChangeX = 0;
     private int shapeChangeY = 0;
     private int score = 0;
@@ -58,6 +59,8 @@ public class TetrisView extends SurfaceView implements Runnable {
         ourHolder = getHolder();
         paint = new Paint();
         sideDistance = x/gameSide;
+        totalX = x;
+        totalY = y;
         screenX = x-2*sideDistance;
         screenY = y*(gameBottom-1)/gameBottom;
         prepareLevel();
@@ -79,7 +82,7 @@ public class TetrisView extends SurfaceView implements Runnable {
         int top = brickSize * (-4 + i + shapeChangeY) + padding;
         int right = sideDistance + brickSize * (gameLength/2-1 + j + shapeChangeX) - padding;
         int bottom = brickSize * (-3 + i + shapeChangeY) - padding;
-        int xCoord = 3 + j + shapeChangeX;
+        int xCoord = gameLength/2-2 + j + shapeChangeX;
         int yCoord = -4 + i + shapeChangeY;
         return new Brick(new Rect(left, top, right, bottom), color, xCoord, yCoord);
     }
@@ -120,8 +123,8 @@ public class TetrisView extends SurfaceView implements Runnable {
                 screenX + sideDistance + padding, bottomLineY + padding * 3);
         leftSideLine = new Rect(sideDistance - padding * 3, 0, sideDistance - padding,
                 bottomLineY + padding * 3);
-        rightSideLine = new Rect(screenX + sideDistance + padding, 0,
-                screenX + sideDistance + padding * 3, bottomLineY + padding * 3);
+        rightSideLine = new Rect(screenX + sideDistance - padding, 0,
+                screenX + sideDistance + padding, bottomLineY + padding * 3);
 
         bricks = createBricks();
         draw();
@@ -173,7 +176,11 @@ public class TetrisView extends SurfaceView implements Runnable {
             shapeChangeY++;
         } else {
             for (int i = 0; i < 4; i++) {
-                filledSquares[bricks.get(i).yCoord][bricks.get(i).xCoord] = 1;
+                try {
+                    filledSquares[bricks.get(i).yCoord][bricks.get(i).xCoord] = 1;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    drawGameOver();
+                }
             }
             for (int i = 0; i < gameHeight; i++) {
                 boolean isOne = true;
@@ -203,6 +210,37 @@ public class TetrisView extends SurfaceView implements Runnable {
             shapeChangeX = 0;
             shapeChangeY = 0;
             bricks = createBricks();
+        }
+    }
+
+    private void drawGameOver() {
+
+        if (ourHolder.getSurface().isValid()) {
+            // Lock the canvas ready to draw
+            canvas = ourHolder.lockCanvas();
+
+            paint.setColor(Color.WHITE);
+            canvas.drawRoundRect(totalX/8, totalY/2-180, totalX*7/8, totalY/2+80, 20, 20, paint);
+            paint.setColor(Color.BLACK);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTextSize(150);
+            canvas.drawText("Game Over", totalX/2, totalY/2, paint);
+
+            canvas.drawRoundRect(totalX/4, totalY*15/24, totalX*3/4, totalY*9/12, 20, 20, paint);
+            canvas.drawRoundRect(totalX/4, totalY*19/24, totalX*3/4, totalY*11/12, 20, 20, paint);
+            paint.setTextSize(100);
+            paint.setColor(Color.WHITE);
+            canvas.drawText("Play Again", totalX/2, totalY*17/24, paint);
+            canvas.drawText("Menu", totalX/2, totalY*21/24, paint);
+
+
+            ourHolder.unlockCanvasAndPost(canvas);
+        }
+
+        try {
+            Thread.sleep(100000);
+        } catch (InterruptedException e) {
+
         }
     }
 

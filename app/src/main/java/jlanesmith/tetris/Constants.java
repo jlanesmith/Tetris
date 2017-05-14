@@ -20,10 +20,10 @@ public class Constants {
     public final static int initialGameSpeed = 500;
 
     /** Speed of the game, in milliseconds. */
-    public final static int fastGameSpeed = 50;
+    public final static int fastGameSpeed = 10;
 
     /** Number of bricks across */
-    public final static int gameLength = 10;
+    public final static int gameLength = 8;
 
     public final static int[] colors = {Color.RED, Color.BLUE, Color.CYAN, Color.MAGENTA,
             Color.YELLOW, Color.GREEN, Color.WHITE};
