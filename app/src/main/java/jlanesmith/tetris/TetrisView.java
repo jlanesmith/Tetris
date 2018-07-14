@@ -1,16 +1,18 @@
 package jlanesmith.tetris;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.Button;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -26,24 +28,17 @@ public class TetrisView extends SurfaceView implements Runnable {
     Context context;
     private Thread gameThread = null;
     private SurfaceHolder ourHolder;
-    private volatile boolean playing;
+    private volatile boolean playing = true;
     private boolean paused = false;
     private Canvas canvas;
     private Paint paint;
 
     // The size of the screen in pixels
-    private int screenX;
-    private int screenY;
-    private int totalX;
-    private int totalY;
-    private int sideDistance;
-    private int gameHeight;
-    private int brickSize;
-    private int[][] shapeType;
-    private int[][] filledSquares;
+    private int screenX, screenY, totalX, totalY, shapeChangeX, shapeChangeY;
+    private int sideDistance, gameHeight, brickSize;
+    private int[][] shapeType, filledSquares;
     private Rect bottomLine, leftSideLine, rightSideLine;
-    private int shapeChangeX = 0;
-    private int shapeChangeY = 0;
+    private RectF playAgain, menu;
     private int score = 0;
     private List<Brick> bricks = new ArrayList<Brick>();
 
@@ -147,7 +142,9 @@ public class TetrisView extends SurfaceView implements Runnable {
                 if (!paused) {
                     update();
                 }
-                draw();
+                if (playing) {
+                    draw();
+                }
             }
         }
     }
@@ -179,6 +176,11 @@ public class TetrisView extends SurfaceView implements Runnable {
                 try {
                     filledSquares[bricks.get(i).yCoord][bricks.get(i).xCoord] = 1;
                 } catch (ArrayIndexOutOfBoundsException e) {
+                    playing = false;
+                    Button button = new Button(context);
+                    button.setHeight(500);
+                    button.setWidth(500);
+                    button.bringToFront();
                     drawGameOver();
                 }
             }
@@ -187,6 +189,7 @@ public class TetrisView extends SurfaceView implements Runnable {
                 for (int j = 0; j < gameLength; j++) {
                     isOne &= filledSquares[i][j] == 1;
                 }
+
                 if (isOne) {
                     int totalBricks = bricks.size();
                     for (int j = 0; j < totalBricks; j++) {
@@ -226,8 +229,10 @@ public class TetrisView extends SurfaceView implements Runnable {
             paint.setTextSize(150);
             canvas.drawText("Game Over", totalX/2, totalY/2, paint);
 
-            canvas.drawRoundRect(totalX/4, totalY*15/24, totalX*3/4, totalY*9/12, 20, 20, paint);
-            canvas.drawRoundRect(totalX/4, totalY*19/24, totalX*3/4, totalY*11/12, 20, 20, paint);
+            playAgain = new RectF(totalX/4, totalY*15/24, totalX*3/4, totalY*9/12);
+            menu = new RectF(totalX/4, totalY*19/24, totalX*3/4, totalY*11/12);
+            canvas.drawRoundRect(playAgain, 20, 20, paint);
+            canvas.drawRoundRect(menu, 20, 20, paint);
             paint.setTextSize(100);
             paint.setColor(Color.WHITE);
             canvas.drawText("Play Again", totalX/2, totalY*17/24, paint);
@@ -235,12 +240,6 @@ public class TetrisView extends SurfaceView implements Runnable {
 
 
             ourHolder.unlockCanvasAndPost(canvas);
-        }
-
-        try {
-            Thread.sleep(100000);
-        } catch (InterruptedException e) {
-
         }
     }
 
@@ -274,7 +273,6 @@ public class TetrisView extends SurfaceView implements Runnable {
     }
 
     public void pause() {
-        playing = false;
         try {
             gameThread.join();
         } catch (InterruptedException e) {
@@ -283,15 +281,11 @@ public class TetrisView extends SurfaceView implements Runnable {
     }
 
     public void resume() {
-        playing = true;
         gameThread = new Thread(this);
         gameThread.start();
     }
 
-    // The SurfaceView class implements onTouchListener
-    // So we can override this method and detect screen touches.
-    @Override
-    public boolean onTouchEvent(MotionEvent motionEvent) {
+    private boolean playGameTouchEvent(MotionEvent motionEvent) {
 
         int screenWidth = screenX + 2*sideDistance;
         int screenHeight = screenY + gameBottom;
@@ -376,4 +370,35 @@ public class TetrisView extends SurfaceView implements Runnable {
         }
         return true;
     }
+
+    private boolean gameOverTouchEvent(MotionEvent motionEvent) {
+
+        switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
+
+            // Player has touched the screen
+            case MotionEvent.ACTION_DOWN:
+
+                break;
+
+            // Player has removed finger from screen
+            case MotionEvent.ACTION_UP:
+
+                break;
+        }
+        return true;
+    }
+
+
+    // The SurfaceView class implements onTouchListener
+    // So we can override this method and detect screen touches.
+    @Override
+    public boolean onTouchEvent(MotionEvent motionEvent) {
+
+        if (playing) {
+            return playGameTouchEvent(motionEvent);
+        } else {
+            return gameOverTouchEvent(motionEvent);
+        }
+    }
+
 }
