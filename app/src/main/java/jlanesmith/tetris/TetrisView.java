@@ -61,6 +61,16 @@ public class TetrisView extends SurfaceView implements Runnable {
         prepareLevel();
     }
 
+    public interface MyEventListener {
+        public void onEventOccurred();
+    }
+
+    private MyEventListener gameOverEventListener;
+
+    public void setEventListener(MyEventListener mEventListener) {
+        this.gameOverEventListener = mEventListener;
+    }
+
     private Rect updateBrick(Brick brick) {
 
         int left = brickSize * (brick.xCoord) + padding + sideDistance;
@@ -218,29 +228,33 @@ public class TetrisView extends SurfaceView implements Runnable {
 
     private void drawGameOver() {
 
-        if (ourHolder.getSurface().isValid()) {
-            // Lock the canvas ready to draw
-            canvas = ourHolder.lockCanvas();
-
-            paint.setColor(Color.WHITE);
-            canvas.drawRoundRect(totalX/8, totalY/2-180, totalX*7/8, totalY/2+80, 20, 20, paint);
-            paint.setColor(Color.BLACK);
-            paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(150);
-            canvas.drawText("Game Over", totalX/2, totalY/2, paint);
-
-            playAgain = new RectF(totalX/4, totalY*15/24, totalX*3/4, totalY*9/12);
-            menu = new RectF(totalX/4, totalY*19/24, totalX*3/4, totalY*11/12);
-            canvas.drawRoundRect(playAgain, 20, 20, paint);
-            canvas.drawRoundRect(menu, 20, 20, paint);
-            paint.setTextSize(100);
-            paint.setColor(Color.WHITE);
-            canvas.drawText("Play Again", totalX/2, totalY*17/24, paint);
-            canvas.drawText("Menu", totalX/2, totalY*21/24, paint);
-
-
-            ourHolder.unlockCanvasAndPost(canvas);
+        if (gameOverEventListener != null) {
+            gameOverEventListener.onEventOccurred();
         }
+
+//        if (ourHolder.getSurface().isValid()) {
+//            // Lock the canvas ready to draw
+//            canvas = ourHolder.lockCanvas();
+//
+//            paint.setColor(Color.WHITE);
+//            canvas.drawRoundRect(totalX/8, totalY/2-180, totalX*7/8, totalY/2+80, 20, 20, paint);
+//            paint.setColor(Color.BLACK);
+//            paint.setTextAlign(Paint.Align.CENTER);
+//            paint.setTextSize(150);
+//            canvas.drawText("Game Over", totalX/2, totalY/2, paint);
+//
+//            playAgain = new RectF(totalX/4, totalY*15/24, totalX*3/4, totalY*9/12);
+//            menu = new RectF(totalX/4, totalY*19/24, totalX*3/4, totalY*11/12);
+//            canvas.drawRoundRect(playAgain, 20, 20, paint);
+//            canvas.drawRoundRect(menu, 20, 20, paint);
+//            paint.setTextSize(100);
+//            paint.setColor(Color.WHITE);
+//            canvas.drawText("Play Again", totalX/2, totalY*17/24, paint);
+//            canvas.drawText("Menu", totalX/2, totalY*21/24, paint);
+//
+//
+//            ourHolder.unlockCanvasAndPost(canvas);
+//        }
     }
 
     private void draw() {

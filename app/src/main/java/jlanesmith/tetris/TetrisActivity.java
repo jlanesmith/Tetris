@@ -5,6 +5,7 @@ import android.graphics.Point;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Display;
+import android.view.View;
 
 public class TetrisActivity extends AppCompatActivity {
 
@@ -23,6 +24,15 @@ public class TetrisActivity extends AppCompatActivity {
         // Initialize gameView and set it as the view
         tetrisView = new TetrisView(this, size.x, size.y);
         setContentView(tetrisView);
+
+        tetrisView.setEventListener(new TetrisView.MyEventListener() {
+
+            @Override
+            public void onEventOccurred() {
+                // TODO Auto-generated method stub
+                startActivity(new Intent(TetrisActivity.this, GameOverActivity.class));
+            }
+        });
 
     }
 

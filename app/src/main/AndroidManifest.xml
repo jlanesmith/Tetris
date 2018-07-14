@@ -16,7 +16,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TetrisActivity"></activity>
+        <activity android:name=".TetrisActivity" />
+        <activity android:name=".GameOverActivity"></activity>
     </application>
 
 </manifest>
