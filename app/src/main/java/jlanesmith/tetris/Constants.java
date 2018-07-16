@@ -17,7 +17,7 @@ public class Constants {
     public final static int padding = 4;
 
     /** Speed of the game, in milliseconds. */
-    public final static int initialGameSpeed = 50;
+    public final static int initialGameSpeed = 200;
 
     /** Speed of the game, in milliseconds. */
     public final static int fastGameSpeed = 10;
